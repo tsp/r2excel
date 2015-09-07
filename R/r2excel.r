@@ -186,7 +186,7 @@ xlsx.addTable<-function(wb, sheet, data, startRow=NULL,startCol=2,
 
 
 xlsx.addPlot<-function( wb, sheet, plotFunction, startRow=NULL,startCol=2,
-               width=7, height=7,... )
+               width=480, height=480,... )
              
 {
   library("xlsx")
