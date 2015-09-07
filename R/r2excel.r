@@ -257,6 +257,57 @@ xlsx.openFile<-function(filename=NULL)
   }    
 }
 
+#add tables to sheet
+xlsx.addTable2<-function(wb, sheet, data, startRow=NULL,startCol=2,
+                        col.names=TRUE, row.names=TRUE, columnWidth=14,
+                        fontColor="#FFFFFF", fontSize=12, 
+                        rownamesFill="white", colnamesFill="white", 
+                        rowFill=c("white", "white")) {
+  data<-as.table(data)
+  rnames<-rownames(data)
+  cnames<-colnames(data)
+  dnames<-names(dimnames(data))
+  TABLE_ROWNAMES_STYLE <- CellStyle(wb) + Font(wb, isBold=TRUE, color=fontColor, 
+                                               heightInPoints=fontSize)
+  #rownames fill 
+  if(rownamesFill!="white") {
+    TABLE_ROWNAMES_STYLE <-TABLE_ROWNAMES_STYLE+
+      Fill(foregroundColor = rownamesFill, 
+           backgroundColor=rownamesFill)
+  }
+  
+  TABLE_COLNAMES_STYLE <- CellStyle(wb) + 
+    Font(wb, isBold=TRUE, color=fontColor, heightInPoints=fontSize) +
+    Alignment(wrapText=TRUE, horizontal="ALIGN_CENTER") +
+    Border(color="black", position=c("TOP", "BOTTOM"), 
+           pen=c("BORDER_THIN", "BORDER_THICK"))
+  #colnames fill
+  if(colnamesFill!="white") {
+    TABLE_COLNAMES_STYLE <-TABLE_COLNAMES_STYLE+
+      Fill(foregroundColor = colnamesFill,
+           backgroundColor=colnamesFill)
+  }
+
+  if(is.null(startRow)){
+    rows<- getRows(sheet) #list of row object
+    startRow=length(rows)+1  
+  }
+  
+  #get cellblock
+  cb<-CellBlock(sheet=sheet,startRow=startRow,startColumn = startCol,noRows = nrow(data)+2,noColumns = ncol(data)+1)
+  CB.setColData(cb,c(dnames[1],rnames),rowOffset = 1, colIndex = 1,colStyle = TABLE_ROWNAMES_STYLE)
+  CB.setRowData(cb,cnames,rowIndex = 2,colOffset = 1,rowStyle = TABLE_COLNAMES_STYLE)
+  CB.setRowData(cb,x = c(dnames[2],rep("",length(cnames)-1)),rowIndex = 1,colOffset = 1,rowStyle = TABLE_COLNAMES_STYLE)
+  CB.setMatrixData(cb,data,startRow = 3,startColumn = 2,showNA = F)
+  col.n<-ncol(data)+1
+  for(i in 1: nrow(data)){ 
+    if(i%%2==0) CB.setFill( cb, fill=Fill(foregroundColor = rowFill[2], backgroundColor=rowFill[2]),
+                            rowIndex=i+2, colIndex=1:col.n)
+    else CB.setFill( cb, fill=Fill(foregroundColor = rowFill[1], backgroundColor=rowFill[1]),
+                     rowIndex=i+2, colIndex=1:col.n)
+  }
+}
+
 #Settings
 #+++++++++++++++++++++++++++++++++
 #if(getOS()=="mac") Sys.setenv(NOAWT=1) #prevents usage of awt - required on Mac
