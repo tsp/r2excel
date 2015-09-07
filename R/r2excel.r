@@ -186,11 +186,11 @@ xlsx.addTable<-function(wb, sheet, data, startRow=NULL,startCol=2,
 
 
 xlsx.addPlot<-function( wb, sheet, plotFunction, startRow=NULL,startCol=2,
-               width=480, height=480,... )
+               width=7, height=7,... )
              
 {
   library("xlsx")
-  png(filename = "plot.png", width = width, height = height,...)
+  win.metafile(filename = "plot.wmf", width = width, height = height,...)
   plotFunction()
   dev.off() 
   #Append plot to the sheet
@@ -199,9 +199,9 @@ xlsx.addPlot<-function( wb, sheet, plotFunction, startRow=NULL,startCol=2,
     startRow=length(rows)+1
   } 
   # Add the file created previously
-  addPicture("plot.png", sheet=sheet,  startRow = startRow, startColumn = startCol) 
+  addPicture("plot.wmf", sheet=sheet,  startRow = startRow, startColumn = startCol) 
   xlsx.addLineBreak(sheet, round(width/20)+1)
-  res<-file.remove("plot.png")
+  res<-file.remove("plot.wmf")
 }
 
 xlsx.writeFile<-function(data, file, sheetName="Sheet1",
