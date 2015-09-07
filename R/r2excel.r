@@ -264,9 +264,36 @@ xlsx.addTable2<-function(wb, sheet, data, startRow=NULL,startCol=2,
                         rownamesFill="white", colnamesFill="white", 
                         rowFill=c("white", "white")) {
   data<-as.table(data)
-  rnames<-rownames(data)
-  cnames<-colnames(data)
-  dnames<-names(dimnames(data))
+  dims<-dim(data)
+  ndims<-length(dims)
+  dname<-dimnames(data)
+  dnames<-names(dname)
+  nrowheader<-ifelse(ndims>1,1,0)
+  ncolheader<-ndims+1-nrowheader
+  
+  if(ndims>1) {
+    cnames<-c(list(rev(dnames)[1]),dname[ndims:2])
+    cnames<-lapply(1:length(cnames),function(i){
+      if(i<length(cnames))
+        tmp<-unlist(lapply(cnames[[i]],c,rep("",length=prod(dims[2:(length(cnames)-i+1)])-1)))
+      else
+        tmp<-cnames[[i]]
+      if(i>1)
+        rep(tmp,length=prod(dims[2:length(cnames)]))
+      else
+        tmp
+      })
+    rnames<-c(dnames[1],dname[[1]]) 
+    dim(data)<-c(dims[1],prod(dims[-1]))
+    }
+  else {
+    cnames<-list(dnames[1],dname[[1]]) 
+    rnames<-""
+    dim(data)<-c(1,dims[1])
+    class(data)<-c("table","matrix")
+  }
+  
+  
   TABLE_ROWNAMES_STYLE <- CellStyle(wb) + Font(wb, isBold=TRUE, color=fontColor, 
                                                heightInPoints=fontSize)
   #rownames fill 
@@ -294,17 +321,24 @@ xlsx.addTable2<-function(wb, sheet, data, startRow=NULL,startCol=2,
   }
   
   #get cellblock
-  cb<-CellBlock(sheet=sheet,startRow=startRow,startColumn = startCol,noRows = nrow(data)+2,noColumns = ncol(data)+1)
-  CB.setColData(cb,c(dnames[1],rnames),rowOffset = 1, colIndex = 1,colStyle = TABLE_ROWNAMES_STYLE)
-  CB.setRowData(cb,cnames,rowIndex = 2,colOffset = 1,rowStyle = TABLE_COLNAMES_STYLE)
-  CB.setRowData(cb,x = c(dnames[2],rep("",length(cnames)-1)),rowIndex = 1,colOffset = 1,rowStyle = TABLE_COLNAMES_STYLE)
-  CB.setMatrixData(cb,data,startRow = 3,startColumn = 2,showNA = F)
-  col.n<-ncol(data)+1
+  cb<-CellBlock(sheet=sheet,startRow=startRow,startColumn = startCol,noRows = nrow(data)+ncolheader,noColumns = ncol(data)+nrowheader)
+  if(nrowheader)
+    CB.setColData(cb,rnames,rowOffset = ncolheader-1, colIndex = 1,colStyle = TABLE_ROWNAMES_STYLE)
+  #CB.setRowData(cb,x = c(cnames[[1]],rep("",ncol(data)-1)),rowIndex = 1,colOffset = nrowheader,rowStyle = TABLE_COLNAMES_STYLE)  
+  lapply(1:length(cnames),function(offset){
+    CB.setRowData(cb,cnames[[offset]],rowIndex = offset,colOffset = nrowheader,rowStyle = TABLE_COLNAMES_STYLE)
+  })
+  #CB.setRowData(cb,x = c(dnames[2],rep("",length(cnames)-1)),rowIndex = 1,colOffset = 1,rowStyle = TABLE_COLNAMES_STYLE)
+  if(nrow(data)>1)
+    CB.setMatrixData(cb,data,startRow = ncolheader+1,startColumn = nrowheader+1,showNA = F)
+  else
+    CB.setRowData(cb,data[1,],rowIndex = ncolheader+1,colOffset = nrowheader)
+  col.n<-ncol(data)+nrowheader
   for(i in 1: nrow(data)){ 
     if(i%%2==0) CB.setFill( cb, fill=Fill(foregroundColor = rowFill[2], backgroundColor=rowFill[2]),
-                            rowIndex=i+2, colIndex=1:col.n)
+                            rowIndex=i+ncolheader, colIndex=1:col.n)
     else CB.setFill( cb, fill=Fill(foregroundColor = rowFill[1], backgroundColor=rowFill[1]),
-                     rowIndex=i+2, colIndex=1:col.n)
+                     rowIndex=i+ncolheader, colIndex=1:col.n)
   }
 }
 
