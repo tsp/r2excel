@@ -190,18 +190,21 @@ xlsx.addPlot<-function( wb, sheet, plotFunction, startRow=NULL,startCol=2,
              
 {
   library("xlsx")
-  win.metafile(filename = "plot.wmf", width = width, height = height,...)
+   png(filename = "plot%04d.png", width = width, height = height, 
+               ...)
   plotFunction()
-  dev.off() 
-  #Append plot to the sheet
-  if(is.null(startRow)){
-    rows<- getRows(sheet) #list of row object
-    startRow=length(rows)+1
-  } 
-  # Add the file created previously
-  addPicture("plot.wmf", sheet=sheet,  startRow = startRow, startColumn = startCol) 
-  xlsx.addLineBreak(sheet, round(width/20)+1)
-  res<-file.remove("plot.wmf")
+  dev.off()
+  plots<-grep("plot[0-9]{4}\\.png",dir(),value = T)
+  lapply(plots,function(p){
+    if (is.null(startRow)) {
+      rows <- getRows(sheet)
+      startRow = length(rows) + 1
+    }
+    addPicture(p, sheet = sheet, startRow = startRow, 
+             startColumn = startCol)
+    xlsx.addLineBreak(sheet, round(width/20) + 1)
+    res <- file.remove(p)
+  })
 }
 
 xlsx.writeFile<-function(data, file, sheetName="Sheet1",
